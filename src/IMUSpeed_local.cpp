@@ -1,12 +1,15 @@
+#include <Arduino.h>
 #include <Wire.h>
 #include <MPU6050.h>
 #include <MadgwickAHRS.h>
+
+// #define DEG_TO_RAD 0.017453292519943295f
 
 class IMUSpeed {
   public:
     IMUSpeed() : vX(0), vY(0), vZ(0), lastTime(0), sampleIntervalMs(10) {}
 
-    bool begin(uint8_t sdaPin = 21, uint8_t sclPin = 22, uint16_t sampleRateHz = 100) {
+    bool begin(uint8_t sdaPin = 8, uint8_t sclPin = 9, uint16_t sampleRateHz = 100) {
       Wire.begin(sdaPin, sclPin);
       mpu.initialize();
       if (!mpu.testConnection()) return false;
@@ -36,10 +39,10 @@ class IMUSpeed {
 
       filter.updateIMU(gx, gy, gz, ax, ay, az);
 
-      float q0 = filter.q0;
-      float q1 = filter.q1;
-      float q2 = filter.q2;
-      float q3 = filter.q3;
+      float q0 = filter.getQ0();
+      float q1 = filter.getQ1();
+      float q2 = filter.getQ2();
+      float q3 = filter.getQ3();
 
       float gxg = 2 * (q1 * q3 - q0 * q2);
       float gyg = 2 * (q0 * q1 + q2 * q3);
@@ -89,20 +92,30 @@ class IMUSpeed {
 IMUSpeed imu;
 
 void setup() {
-  Serial.begin(115200);
-  if (!imu.begin(21, 22, 100)) {
+  Serial.begin(115200); delay(1500);
+  if (!imu.begin(8, 9, 100)) {
     Serial.println("Erro ao iniciar MPU6050");
     while (1);
   }
   Serial.println("Sensor iniciado");
 }
 
+unsigned long instanteAnterior = 0;
+unsigned long instanteAtual = 0;
+
 void loop() {
+  
+  
+
   if (imu.update()) {
-    float speed = imu.getSpeed();
-    Serial.print("Velocidade: ");
-    Serial.print(speed, 3);
-    Serial.println(" m/s");
+    instanteAtual = millis();
+    if (instanteAtual > instanteAnterior + 1000) {
+      float speed = imu.getSpeed();
+      Serial.print("Velocidade: ");
+      Serial.print(speed, 3);
+      Serial.println(" m/s");
+      instanteAnterior = instanteAtual;
+    }
   }
 
   // Exemplo: zerar velocidade manualmente (você pode usar botão aqui)
