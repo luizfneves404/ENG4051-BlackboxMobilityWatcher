@@ -32,10 +32,10 @@ bool IMUSpeed::SpeedUpdate() {
 
   filter.updateIMU(gx, gy, gz, ax, ay, az);
 
-  float q0 = filter.q0;
-  float q1 = filter.q1;
-  float q2 = filter.q2;
-  float q3 = filter.q3;
+  float q0 = filter.getQ0();
+  float q1 = filter.getQ1();
+  float q2 = filter.getQ2();
+  float q3 = filter.getQ3();
 
   float gxg = 2 * (q1 * q3 - q0 * q2);
   float gyg = 2 * (q0 * q1 + q2 * q3);

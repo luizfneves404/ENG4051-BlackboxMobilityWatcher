@@ -1,4 +1,4 @@
-#include "IMUSpeed.h"
+/* #include "IMUSpeed.h"
 
 IMUSpeed imu;
 
@@ -20,3 +20,4 @@ void loop() {
   }
   // Aqui você pode fazer outras coisas sem bloquear o loop
 }
+ */
