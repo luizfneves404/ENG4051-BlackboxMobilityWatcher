@@ -1,6 +1,7 @@
-#ifndef IMUSPEED_H
-#define IMUSPEED_H
+#ifndef IMUSPEED_LOCAL_H
+#define IMUSPEED_LOCAL_H
 
+#include <Arduino.h>
 #include <Wire.h>
 #include <MPU6050.h>
 #include <MadgwickAHRS.h>
@@ -10,10 +11,10 @@ class IMUSpeed {
     IMUSpeed();
 
     // Inicializa sensor com pinos SDA, SCL e sample rate (Hz)
-    bool begin(uint8_t sdaPin = 21, uint8_t sclPin = 22, uint16_t sampleRateHz = 100);
+    bool begin(uint8_t sdaPin = 8, uint8_t sclPin = 9, uint16_t sampleRateHz = 100);
 
     // Atualiza dados (retorna true se atualizou)
-    bool SpeedUpdate();
+    bool update();
 
     // Retorna módulo da velocidade (m/s)
     float getSpeed();
@@ -31,6 +32,10 @@ class IMUSpeed {
     float vX, vY, vZ;
     unsigned long lastTime;
     unsigned long sampleIntervalMs;
+
+    // Métodos de calibração
+    void calibrateSensorOffsets();
+    void calibrateGyroOffsetsOnly();
 };
 
-#endif
+#endif 
