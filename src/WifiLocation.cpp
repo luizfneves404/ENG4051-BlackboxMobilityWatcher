@@ -1,11 +1,8 @@
-// Define these to use mock services
-// Comment out to use real hardware/APIs
-// #define MOCK_WIFI_SCAN
-// #define MOCK_GOOGLE_SERVICE
-
 #include "WifiLocation.h"
-#include "env.h"
+#include "env.h" // Your file with the GOOGLE_API_KEY
+#include "certificates.h"
 
+// Conditional includes for real hardware vs. mock data
 #ifndef MOCK_WIFI_SCAN
 #include <WiFi.h>
 #else
@@ -14,13 +11,26 @@
 
 #ifndef MOCK_GOOGLE_SERVICE
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #endif
 
 #include <ArduinoJson.h>
 
-// ---------- Mock Data ----------
+// ---------- Constants and State Management ----------
+const int MAX_AP = 20; // Max access points to consider
+const unsigned long LOCATION_INTERVAL = 30000; // Get location every 30 seconds
+unsigned long previousLocationTime = 0;
+
+// State machine for non-blocking WiFi scan
+enum LocationState {
+  STATE_IDLE,
+  STATE_SCANNING,
+  STATE_SCAN_COMPLETE
+};
+static LocationState locationState = STATE_IDLE; // Use 'static' to keep state within this file
+
+// ---------- Mock Data (if enabled) ----------
 #ifdef MOCK_WIFI_SCAN
-// Example scan data lines: "62:22:32:ac:6a:72 -53 11"
 const char *mockScan[] = {
     "60:22:32:ac:6a:72 -50 11",
     "40:ed:00:84:f1:46 -57 6",
@@ -71,77 +81,115 @@ const int mockScanCount = sizeof(mockScan) / sizeof(mockScan[0]);
 #endif
 
 #ifdef MOCK_GOOGLE_SERVICE
-// Example Google API response payload
-const char *mockGoogleResponse = R"({
-  "location": {
-    "lat": -22.9789236,
-    "lng": -43.231435
-  },
+const char* mockGoogleResponse = R"({
+  "location": { "lat": -22.9789236, "lng": -43.231435 },
   "accuracy": 14.322
 })";
 #endif
 
-void reconectarWiFi()
-{
-  if (WiFi.status() != WL_CONNECTED)
-  {
+// ---------- Function Prototypes (for internal use) ----------
+int scanAccessPoints(AccessPoint aps[], int maxCount, int networkCount);
+Location queryGoogleService(const AccessPoint aps[], int count);
+void reconectarWiFi();
+
+
+// ---------- Public Functions (declared in .h) ----------
+
+void wifiLocationSetup() {
+#ifdef MOCK_WIFI_SCAN
+  Serial.println("[MOCK] Using mock WiFi scan data");
+#else
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+  reconectarWiFi();
+#endif
+  Serial.println("Sistema de localização WiFi iniciado");
+}
+
+void wifiLocationLoop() {
+  unsigned long currentTime = millis();
+
+  switch (locationState) {
+    case STATE_IDLE:
+      if (currentTime - previousLocationTime >= LOCATION_INTERVAL) {
+        Serial.println("--- Iniciando verificação de localização ---");
+#ifndef MOCK_WIFI_SCAN
+        WiFi.scanNetworks(true); // Start ASYNCHRONOUS scan
+#endif
+        locationState = STATE_SCANNING;
+        previousLocationTime = currentTime;
+      }
+      break;
+
+    case STATE_SCANNING: {
+#ifdef MOCK_WIFI_SCAN
+      Serial.println("[MOCK] Scan complete.");
+      locationState = STATE_SCAN_COMPLETE;
+#else
+      int8_t scanResult = WiFi.scanComplete();
+      if (scanResult >= 0) {
+        Serial.printf("Scan completo! %d redes encontradas.\n", scanResult);
+        locationState = STATE_SCAN_COMPLETE;
+      } else if (scanResult == WIFI_SCAN_FAILED) {
+        Serial.println("A varredura de WiFi falhou.");
+        locationState = STATE_IDLE;
+      }
+      // If still running, do nothing and wait for the next loop iteration
+#endif
+      break;
+    }
+
+    case STATE_SCAN_COMPLETE: {
+      AccessPoint aps[MAX_AP];
+      int networkCount = 0;
+
+#ifdef MOCK_WIFI_SCAN
+      networkCount = mockScanCount;
+#else
+      networkCount = WiFi.scanComplete();
+#endif
+      
+      int populatedCount = scanAccessPoints(aps, MAX_AP, networkCount);
+      Location loc = queryGoogleService(aps, populatedCount);
+
+      if (loc.valid) {
+        Serial.printf("Location: %.6f, %.6f (accuracy: %.2f m)\n", loc.latitude, loc.longitude, loc.accuracy);
+      } else {
+        Serial.println("Falha ao obter a localização.");
+      }
+      
+      // Return to IDLE state to wait for the next interval
+      locationState = STATE_IDLE;
+      break;
+    }
+  }
+}
+
+// ---------- Internal Implementation Functions ----------
+
+void reconectarWiFi() {
+#ifndef MOCK_WIFI_SCAN
+  if (WiFi.status() != WL_CONNECTED) {
     WiFi.begin("Projeto", "2022-11-07");
     Serial.print("Conectando ao WiFi...");
-    while (WiFi.status() != WL_CONNECTED)
-    {
+    while (WiFi.status() != WL_CONNECTED) {
       Serial.print(".");
-      delay(1000);
+      delay(500);
     }
     Serial.print("conectado!\nEndereço IP: ");
     Serial.println(WiFi.localIP());
   }
-}
-
-// Function prototypes
-int scanAccessPoints(AccessPoint aps[], int maxCount);
-Location queryGoogleService(const AccessPoint aps[], int count);
-
-void wifiLocationSetup()
-{
-#ifdef MOCK_WIFI_SCAN
-  Serial.println("[MOCK] Using mock WiFi scan data");
-#else
-  reconectarWiFi();
 #endif
 }
 
-void wifiLocationLoop()
-{
-  // Scan or mock-scan APs
-  reconectarWiFi();
-  const int MAX_AP = 10;
-  AccessPoint aps[MAX_AP];
-  int count = scanAccessPoints(aps, MAX_AP);
-
-  // Query Google (mock or real)
-  Location loc = queryGoogleService(aps, count);
-
-  if (loc.valid)
-  {
-    Serial.printf("Location: %.6f, %.6f (accuracy: %.2f m)\n", loc.latitude, loc.longitude, loc.accuracy);
-  }
-  else
-  {
-    Serial.println("Failed to obtain location");
-  }
-}
-
-// ---------- Implementation ----------
-int scanAccessPoints(AccessPoint aps[], int maxCount)
-{
+int scanAccessPoints(AccessPoint aps[], int maxCount, int networkCount) {
 #ifdef MOCK_WIFI_SCAN
   int n = min(maxCount, mockScanCount);
-  for (int i = 0; i < n; i++)
-  {
-    // parse mac, rssi, channel
+  for (int i = 0; i < n; i++) {
     char buf[64];
     strcpy(buf, mockScan[i]);
-    char *token = strtok(buf, " ");
+    char* token = strtok(buf, " ");
     aps[i].macAddress = String(token);
     token = strtok(nullptr, " ");
     aps[i].signalStrength = atoi(token);
@@ -150,79 +198,86 @@ int scanAccessPoints(AccessPoint aps[], int maxCount)
   }
   return n;
 #else
-  int n = WiFi.scanNetworks();
-  n = min(n, maxCount);
-  for (int i = 0; i < n; i++)
-  {
+  int n = min(networkCount, maxCount);
+  for (int i = 0; i < n; i++) {
     aps[i].macAddress = WiFi.BSSIDstr(i);
     aps[i].signalStrength = WiFi.RSSI(i);
     aps[i].channel = WiFi.channel(i);
   }
+  WiFi.scanDelete(); // Free memory from scan results
   return n;
 #endif
 }
 
-Location queryGoogleService(const AccessPoint aps[], int count)
-{
-  Location loc{0, 0, 0, false};
-
-  // Build JSON payload
-  DynamicJsonDocument doc(2048);
+Location queryGoogleService(const AccessPoint aps[], int count) {
+  Location loc = {0, 0, 0, false};
+  if (count == 0) {
+    Serial.println("No access points found to query Google Service.");
+    return loc;
+  }
+  
+  JsonDocument doc;
   doc["considerIp"] = false;
-  JsonArray arr = doc.createNestedArray("wifiAccessPoints");
-  for (int i = 0; i < count; i++)
-  {
-    JsonObject obj = arr.createNestedObject();
-    obj["macAddress"] = aps[i].macAddress;
-    obj["signalStrength"] = aps[i].signalStrength;
-    obj["channel"] = aps[i].channel;
+  for (int i = 0; i < count; i++) {
+    doc["wifiAccessPoints"][i]["macAddress"] = aps[i].macAddress;
+    doc["wifiAccessPoints"][i]["signalStrength"] = aps[i].signalStrength;
+    doc["wifiAccessPoints"][i]["channel"] = aps[i].channel;
   }
 
 #ifdef MOCK_GOOGLE_SERVICE
   Serial.println("[MOCK] Sending payload to Google API:");
   serializeJsonPretty(doc, Serial);
   Serial.println();
-
-  // Parse mock response
-  DynamicJsonDocument respDoc(512);
+  JsonDocument respDoc;
   deserializeJson(respDoc, mockGoogleResponse);
-  JsonObject r = respDoc.as<JsonObject>();
-  if (r.containsKey("location"))
-  {
-    loc.latitude = r["location"]["lat"];
-    loc.longitude = r["location"]["lng"];
-    loc.accuracy = r["accuracy"];
+  if (respDoc.containsKey("location")) {
+    loc.latitude = respDoc["location"]["lat"];
+    loc.longitude = respDoc["location"]["lng"];
+    loc.accuracy = respDoc["accuracy"];
     loc.valid = true;
   }
-  return loc;
 #else
-  // Real HTTP POST to Google
+  reconectarWiFi();
+  
+  // Create secure WiFi client for HTTPS
+  WiFiClientSecure client;
+  client.setCACert(google_ca_cert);
+  
   HTTPClient http;
-  String url = String("https://www.googleapis.com/geolocation/v1/geolocate?key=") + String(GOOGLE_API_KEY); // get from env
-  http.begin(url);
+  String url = String("https://www.googleapis.com/geolocation/v1/geolocate?key=") + String(GOOGLE_API_KEY);
+  http.begin(client, url);
   http.addHeader("Content-Type", "application/json");
+  
   String body;
   serializeJson(doc, body);
+  
+  Serial.println("Sending HTTPS request to Google Geolocation API...");
   int code = http.POST(body);
-  if (code == 200)
-  {
-    String resp = http.getString();
-    DynamicJsonDocument respDoc(512);
-    deserializeJson(respDoc, resp);
-    JsonObject r = respDoc.as<JsonObject>();
-    if (r.containsKey("location"))
-    {
-      loc.latitude = r["location"]["lat"];
-      loc.longitude = r["location"]["lng"];
-      loc.accuracy = r["accuracy"];
+  
+  if (code == 200) {
+    String response = http.getString();
+    JsonDocument respDoc;
+    DeserializationError error = deserializeJson(respDoc, response);
+    
+    if (error) {
+      Serial.printf("JSON parsing error: %s\n", error.c_str());
+    } else if (respDoc.containsKey("location")) {
+      loc.latitude = respDoc["location"]["lat"];
+      loc.longitude = respDoc["location"]["lng"];
+      loc.accuracy = respDoc["accuracy"];
       loc.valid = true;
+      Serial.println("Location successfully retrieved");
+    } else {
+      Serial.println("Invalid response format from Google API");
+    }
+  } else {
+    Serial.printf("HTTPS request failed with code: %d\n", code);
+    if (code > 0) {
+      Serial.printf("Response: %s\n", http.getString().c_str());
     }
   }
-  else
-  {
-    Serial.printf("HTTP error: %d\n", code);
-  }
+  
   http.end();
-  return loc;
 #endif
+  return loc;
 }

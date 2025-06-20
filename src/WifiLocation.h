@@ -1,27 +1,34 @@
-#ifndef WIFILOCATION_H
-#define WIFILOCATION_H
+#ifndef WIFI_LOCATION_H
+#define WIFI_LOCATION_H
 
 #include <Arduino.h>
 
-// Common Location struct
-typedef struct {
-    double latitude;
-    double longitude;
-    double accuracy;
-    bool valid;
-} Location;
+// Data structure for a single WiFi access point
+struct AccessPoint {
+  String macAddress;
+  int signalStrength;
+  int channel;
+};
 
-// WiFi Access Point struct for scanning
-typedef struct {
-    String macAddress;
-    int signalStrength;
-    int channel;
-} AccessPoint;
+// Data structure for the final location data
+struct Location {
+  double latitude;
+  double longitude;
+  double accuracy;
+  bool valid;
+};
 
-// Function declarations
+/**
+ * @brief Initializes WiFi connection and prepares for location scanning.
+ * Call this once in your main setup().
+ */
 void wifiLocationSetup();
-void wifiLocationLoop();
-int scanAccessPoints(AccessPoint aps[], int maxCount);
-Location queryGoogleService(const AccessPoint aps[], int count);
 
-#endif
+/**
+ * @brief Manages the non-blocking location finding process.
+ * Call this continuously in your main loop(). It handles timing,
+ * scanning, and processing internally.
+ */
+void wifiLocationLoop();
+
+#endif // WIFI_LOCATION_H
