@@ -1,7 +1,5 @@
 #include "IMUSpeed_local.h"
 
-#define DEG_TO_RAD 0.017453292519943295f
-
 IMUSpeed::IMUSpeed() : vX(0), vY(0), vZ(0), lastTime(0), sampleIntervalMs(10) {}
 
 #define CALIB_OFFSET_NB_MES 1000

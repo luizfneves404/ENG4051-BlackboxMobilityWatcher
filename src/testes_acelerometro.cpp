@@ -3,7 +3,7 @@
 IMUSpeed imu;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   if (!imu.begin(21, 22, 100)) {  // SDA, SCL e sample rate 100 Hz
     Serial.println("Falha ao iniciar MPU6050");
     while (1);

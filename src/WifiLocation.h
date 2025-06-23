@@ -31,4 +31,10 @@ void wifiLocationSetup();
  */
 void wifiLocationLoop();
 
+/**
+ * @brief Gets the most recent location data obtained from WiFi scanning.
+ * @return Location struct containing latitude, longitude, accuracy and validity flag
+ */
+Location getCurrentLocation();
+
 #endif // WIFI_LOCATION_H

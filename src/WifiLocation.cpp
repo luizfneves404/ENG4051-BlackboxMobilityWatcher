@@ -18,8 +18,11 @@
 
 // ---------- Constants and State Management ----------
 const int MAX_AP = 20; // Max access points to consider
-const unsigned long LOCATION_INTERVAL = 30000; // Get location every 30 seconds
+const unsigned long LOCATION_INTERVAL = 60000; // Get location every 60 seconds
 unsigned long previousLocationTime = 0;
+
+// Global variable to store the current location
+static Location currentLocation = {0, 0, 0, false};
 
 // State machine for non-blocking WiFi scan
 enum LocationState {
@@ -99,7 +102,6 @@ void wifiLocationSetup() {
 #ifdef MOCK_WIFI_SCAN
   Serial.println("[MOCK] Using mock WiFi scan data");
 #else
-  WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(100);
   reconectarWiFi();
@@ -152,6 +154,9 @@ void wifiLocationLoop() {
       
       int populatedCount = scanAccessPoints(aps, MAX_AP, networkCount);
       Location loc = queryGoogleService(aps, populatedCount);
+
+      // Update the global current location
+      currentLocation = loc;
 
       if (loc.valid) {
         Serial.printf("Location: %.6f, %.6f (accuracy: %.2f m)\n", loc.latitude, loc.longitude, loc.accuracy);
@@ -241,7 +246,7 @@ Location queryGoogleService(const AccessPoint aps[], int count) {
   
   // Create secure WiFi client for HTTPS
   WiFiClientSecure client;
-  client.setCACert(google_ca_cert);
+  client.setCACert(get_google_ca_cert());
   
   HTTPClient http;
   String url = String("https://www.googleapis.com/geolocation/v1/geolocate?key=") + String(GOOGLE_API_KEY);
@@ -280,4 +285,8 @@ Location queryGoogleService(const AccessPoint aps[], int count) {
   http.end();
 #endif
   return loc;
+}
+
+Location getCurrentLocation() {
+  return currentLocation;
 }
