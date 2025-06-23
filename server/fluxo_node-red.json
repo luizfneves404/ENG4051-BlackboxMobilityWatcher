@@ -1,0 +1,1016 @@
+[
+    {
+        "id": "976937239fa0612d",
+        "type": "tab",
+        "label": "Fluxo 2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "9de0e55f9868aeab",
+        "type": "mqtt in",
+        "z": "976937239fa0612d",
+        "name": "",
+        "topic": "grupo1/preferences",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "65806091af7bcdc0",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 210,
+        "y": 240,
+        "wires": [
+            [
+                "81416b8ab6bd7d0b"
+            ]
+        ]
+    },
+    {
+        "id": "81416b8ab6bd7d0b",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "speedMax",
+                "pt": "global",
+                "to": "payload.speedMax",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "accMax",
+                "pt": "global",
+                "to": "payload.accMax",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "sendAlerts",
+                "pt": "global",
+                "to": "payload.sendAlerts",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "queryParameters",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 520,
+        "y": 240,
+        "wires": [
+            [
+                "dd91be322f8c9dde"
+            ]
+        ]
+    },
+    {
+        "id": "dd91be322f8c9dde",
+        "type": "postgresql",
+        "z": "976937239fa0612d",
+        "name": "",
+        "query": "INSERT INTO grupo1_preferences2 (accMax,speedMax,sendAlerts)\nVALUES ($accMax,$speedMax,$sendAlerts)",
+        "postgreSQLConfig": "1b3419cbddb0094f",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 770,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "8cd72e2b930942c8",
+        "type": "mqtt in",
+        "z": "976937239fa0612d",
+        "name": "",
+        "topic": "grupo1/posicao",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "65806091af7bcdc0",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 900,
+        "wires": [
+            [
+                "3323c496f9c1bf5f",
+                "dbb12ebca76cc72c",
+                "cb71183801ed4eb7"
+            ]
+        ]
+    },
+    {
+        "id": "3323c496f9c1bf5f",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "queryParameters",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 450,
+        "y": 900,
+        "wires": [
+            [
+                "eea8d184c2490c7e"
+            ]
+        ]
+    },
+    {
+        "id": "c5a9ff6e958c0cec",
+        "type": "postgresql",
+        "z": "976937239fa0612d",
+        "name": "",
+        "query": "SELECT accMax, speedMax, sendAlerts FROM grupo1_preferences2\nORDER BY created_at DESC\nLIMIT 1",
+        "postgreSQLConfig": "1b3419cbddb0094f",
+        "split": true,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 350,
+        "y": 100,
+        "wires": [
+            [
+                "feb0652abe2d5d30"
+            ]
+        ]
+    },
+    {
+        "id": "7685068520fe70ae",
+        "type": "inject",
+        "z": "976937239fa0612d",
+        "name": "",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 100,
+        "wires": [
+            [
+                "c5a9ff6e958c0cec"
+            ]
+        ]
+    },
+    {
+        "id": "680151169f45d090",
+        "type": "inject",
+        "z": "976937239fa0612d",
+        "name": "",
+        "props": [
+            {
+                "p": "payload.accMax",
+                "v": "accMax",
+                "vt": "global"
+            },
+            {
+                "p": "payload.speedMax",
+                "v": "speedMax",
+                "vt": "global"
+            },
+            {
+                "p": "payload.sendAlerts",
+                "v": "sendAlerts",
+                "vt": "global"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 1050,
+        "y": 320,
+        "wires": [
+            [
+                "329d32281e05482d"
+            ]
+        ]
+    },
+    {
+        "id": "329d32281e05482d",
+        "type": "debug",
+        "z": "976937239fa0612d",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1220,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "feb0652abe2d5d30",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "speedMax",
+                "pt": "global",
+                "to": "payload.speedmax",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "accMax",
+                "pt": "global",
+                "to": "payload.accmax",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "sendAlerts",
+                "pt": "global",
+                "to": "payload.sendalerts",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 580,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "dbb12ebca76cc72c",
+        "type": "switch",
+        "z": "976937239fa0612d",
+        "name": "",
+        "property": "payload.aceleracao",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "accMax",
+                "vt": "global"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 430,
+        "y": 980,
+        "wires": [
+            [
+                "4be316f0c10f4032"
+            ]
+        ]
+    },
+    {
+        "id": "cb71183801ed4eb7",
+        "type": "switch",
+        "z": "976937239fa0612d",
+        "name": "",
+        "property": "payload.velocidade",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "speedMax",
+                "vt": "global"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 430,
+        "y": 820,
+        "wires": [
+            [
+                "c287cb7919f00a49"
+            ]
+        ]
+    },
+    {
+        "id": "c3f147a0298be094",
+        "type": "telegram command",
+        "z": "976937239fa0612d",
+        "name": "",
+        "command": "/set_alert_speed",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "f63670906e7b009a",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 120,
+        "y": 400,
+        "wires": [
+            [
+                "5bf3a9fc40d4ea37"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "5bf3a9fc40d4ea37",
+        "type": "function",
+        "z": "976937239fa0612d",
+        "name": "function 1",
+        "func": "try {\n    const parsed = parseInt(msg.payload.content, 10);\n\n    if (!isNaN(parsed)) {\n        msg.payload.content = parsed;\n    } else {\n        msg.payload.content = -1;\n    }\n} catch (e) {\n    msg.payload.content = -1;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 400,
+        "wires": [
+            [
+                "cb8fcb0fb135f227"
+            ]
+        ]
+    },
+    {
+        "id": "cb8fcb0fb135f227",
+        "type": "switch",
+        "z": "976937239fa0612d",
+        "name": "",
+        "property": "payload.content",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lt",
+                "v": "0",
+                "vt": "num"
+            },
+            {
+                "t": "gte",
+                "v": "0",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 570,
+        "y": 400,
+        "wires": [
+            [
+                "a2cb322c102a0b61"
+            ],
+            [
+                "3bdd7dd7d91f79ac"
+            ]
+        ]
+    },
+    {
+        "id": "a2cb322c102a0b61",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "Tira chatId e altera content para ErrorMsg",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "payload.messageId",
+                "pt": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload.content",
+                "pt": "msg",
+                "to": "Valor inválido! Insira outro, por favor.",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 380,
+        "wires": [
+            [
+                "58da81ebdb3979ee"
+            ]
+        ]
+    },
+    {
+        "id": "58da81ebdb3979ee",
+        "type": "telegram sender",
+        "z": "976937239fa0612d",
+        "name": "",
+        "bot": "f63670906e7b009a",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1150,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "220d7cf1457ceb25",
+        "type": "mqtt out",
+        "z": "976937239fa0612d",
+        "name": "",
+        "topic": "grupo1/preferences",
+        "qos": "2",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "65806091af7bcdc0",
+        "x": 1450,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "83bd9f3a24ea2601",
+        "type": "telegram command",
+        "z": "976937239fa0612d",
+        "name": "",
+        "command": "/set_alert_accelaration",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "f63670906e7b009a",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 140,
+        "y": 540,
+        "wires": [
+            [
+                "8ba3b910b8236b28"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "8ba3b910b8236b28",
+        "type": "function",
+        "z": "976937239fa0612d",
+        "name": "function 2",
+        "func": "try {\n    const parsed = parseInt(msg.payload.content, 10);\n\n    if (!isNaN(parsed)) {\n        msg.payload.content = parsed;\n    } else {\n        msg.payload.content = -1;\n    }\n} catch (e) {\n    msg.payload.content = -1;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 540,
+        "wires": [
+            [
+                "7c0e9782410d557a"
+            ]
+        ]
+    },
+    {
+        "id": "7c0e9782410d557a",
+        "type": "switch",
+        "z": "976937239fa0612d",
+        "name": "",
+        "property": "payload.content",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lt",
+                "v": "0",
+                "vt": "num"
+            },
+            {
+                "t": "gte",
+                "v": "0",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 550,
+        "y": 540,
+        "wires": [
+            [
+                "c17439f6c5678060"
+            ],
+            [
+                "748289ed4ca542e1"
+            ]
+        ]
+    },
+    {
+        "id": "c17439f6c5678060",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "Tira chatId e altera content para ErrorMsg",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "payload.messageId",
+                "pt": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload.content",
+                "pt": "msg",
+                "to": "Valor inválido! Insira outro, por favor.",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 820,
+        "y": 520,
+        "wires": [
+            [
+                "58da81ebdb3979ee"
+            ]
+        ]
+    },
+    {
+        "id": "d2e5975e908d9207",
+        "type": "telegram command",
+        "z": "976937239fa0612d",
+        "name": "",
+        "command": "/receive_alerts",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "f63670906e7b009a",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 140,
+        "y": 720,
+        "wires": [
+            [
+                "b5fe9e99e410658b"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "b5fe9e99e410658b",
+        "type": "function",
+        "z": "976937239fa0612d",
+        "name": "function 3",
+        "func": "if (msg.payload.content.trim() === 'yes') {\n    msg.payload.content = true;\n} else if (msg.payload.content.trim() === 'no') {\n    msg.payload.content = false;\n} else {\n    msg.payload.content = -1;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 720,
+        "wires": [
+            [
+                "2b76483a2fb04bb2"
+            ]
+        ]
+    },
+    {
+        "id": "2b76483a2fb04bb2",
+        "type": "switch",
+        "z": "976937239fa0612d",
+        "name": "",
+        "property": "payload.content",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "-1",
+                "vt": "num"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 570,
+        "y": 720,
+        "wires": [
+            [
+                "d81e0c25ab8592c3"
+            ],
+            [
+                "5ebe6aa0d94259ae"
+            ]
+        ]
+    },
+    {
+        "id": "d81e0c25ab8592c3",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "Tira chatId e altera content para ErrorMsg",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "payload.messageId",
+                "pt": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload.content",
+                "pt": "msg",
+                "to": "Valor inválido! Insira outro, por favor.",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 700,
+        "wires": [
+            [
+                "58da81ebdb3979ee"
+            ]
+        ]
+    },
+    {
+        "id": "5ebe6aa0d94259ae",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "sendAlerts",
+                "pt": "global",
+                "to": "payload.content",
+                "tot": "msg",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 790,
+        "y": 760,
+        "wires": [
+            [
+                "af03a6a0fe4cacaf"
+            ]
+        ]
+    },
+    {
+        "id": "748289ed4ca542e1",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "accMax",
+                "pt": "global",
+                "to": "payload.content",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 760,
+        "y": 580,
+        "wires": [
+            [
+                "af03a6a0fe4cacaf"
+            ]
+        ]
+    },
+    {
+        "id": "af03a6a0fe4cacaf",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{}",
+                "tot": "json"
+            },
+            {
+                "t": "set",
+                "p": "payload.accMax",
+                "pt": "msg",
+                "to": "accMax",
+                "tot": "global"
+            },
+            {
+                "t": "set",
+                "p": "payload.speedMax",
+                "pt": "msg",
+                "to": "speedMax",
+                "tot": "global"
+            },
+            {
+                "t": "set",
+                "p": "payload.sendAlerts",
+                "pt": "msg",
+                "to": "sendAlerts",
+                "tot": "global"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1200,
+        "y": 500,
+        "wires": [
+            [
+                "220d7cf1457ceb25"
+            ]
+        ]
+    },
+    {
+        "id": "806b9be0a60954b3",
+        "type": "template",
+        "z": "976937239fa0612d",
+        "name": "",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "{\n \"content\": \"A velocidade {{payload.velocidade}} km/h ultrapassou o limite de {{global.speedMax}} km/h\",\n \"chatId\": 6785554571,\n \"type\": \"message\"\n}",
+        "output": "json",
+        "x": 780,
+        "y": 840,
+        "wires": [
+            [
+                "1302e9b1d073a7e3"
+            ]
+        ]
+    },
+    {
+        "id": "f0ffcdf26fe0ea37",
+        "type": "template",
+        "z": "976937239fa0612d",
+        "name": "",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "{\n \"content\": \"A velocidade, {{payload.accMax}} ultrapassou o limite de {{global.accMax}}\",\n \"chatId\": 6785554571,\n \"type\": \"message\"\n}",
+        "output": "json",
+        "x": 780,
+        "y": 960,
+        "wires": [
+            [
+                "1302e9b1d073a7e3"
+            ]
+        ]
+    },
+    {
+        "id": "1302e9b1d073a7e3",
+        "type": "telegram sender",
+        "z": "976937239fa0612d",
+        "name": "",
+        "bot": "f63670906e7b009a",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1090,
+        "y": 900,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "eea8d184c2490c7e",
+        "type": "postgresql",
+        "z": "976937239fa0612d",
+        "name": "",
+        "query": "INSERT INTO grupo1_posicao \n    (longitude,\n    latitude,\n    aceleracao,\n    velocidade)\nVALUES ($longitude,$latitude,$aceleracao,$velocidade)",
+        "postgreSQLConfig": "1b3419cbddb0094f",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 710,
+        "y": 900,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c287cb7919f00a49",
+        "type": "switch",
+        "z": "976937239fa0612d",
+        "name": "",
+        "property": "sendAlerts",
+        "propertyType": "global",
+        "rules": [
+            {
+                "t": "true"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 610,
+        "y": 820,
+        "wires": [
+            [
+                "806b9be0a60954b3"
+            ]
+        ]
+    },
+    {
+        "id": "4be316f0c10f4032",
+        "type": "switch",
+        "z": "976937239fa0612d",
+        "name": "",
+        "property": "sendAlerts",
+        "propertyType": "global",
+        "rules": [
+            {
+                "t": "true"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 610,
+        "y": 980,
+        "wires": [
+            [
+                "f0ffcdf26fe0ea37"
+            ]
+        ]
+    },
+    {
+        "id": "3bdd7dd7d91f79ac",
+        "type": "change",
+        "z": "976937239fa0612d",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "speedMax",
+                "pt": "global",
+                "to": "payload.content",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 790,
+        "y": 440,
+        "wires": [
+            [
+                "af03a6a0fe4cacaf"
+            ]
+        ]
+    },
+    {
+        "id": "65806091af7bcdc0",
+        "type": "mqtt-broker",
+        "name": "janks.mqtt",
+        "broker": "mqtt.janks.dev.br",
+        "port": "8883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "5",
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "1b3419cbddb0094f",
+        "type": "postgreSQLConfig",
+        "name": "projeto",
+        "host": "postgresql.janks.dev.br",
+        "hostFieldType": "str",
+        "port": 5432,
+        "portFieldType": "num",
+        "database": "projeto",
+        "databaseFieldType": "str",
+        "ssl": "true",
+        "sslFieldType": "bool",
+        "applicationName": "",
+        "applicationNameType": "str",
+        "max": 10,
+        "maxFieldType": "num",
+        "idle": 1000,
+        "idleFieldType": "num",
+        "connectionTimeout": 10000,
+        "connectionTimeoutFieldType": "num",
+        "user": "iot",
+        "userFieldType": "str",
+        "password": "pepcon-garton",
+        "passwordFieldType": "str"
+    },
+    {
+        "id": "f63670906e7b009a",
+        "type": "telegram bot",
+        "botname": "BlackboxMobilityWatcherBot",
+        "usernames": "",
+        "chatids": "6785554571",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    }
+]
