@@ -57,6 +57,11 @@
       text-align: center;
     }
 
+    input[type="checkbox"] {
+      margin-right: 8px;
+      transform: scale(1.2);
+    }
+
     button[type="submit"] {
       padding: 10px 20px;
       font-size: 16px;
@@ -94,6 +99,13 @@
         <span class="unit">m/s²</span>
         <button type="button" class="small-button" onclick="changeValue('acceleration', 1)">+</button>
       </div>
+    </div>
+
+    <div class="field">
+      <label class="label">
+        <input type="checkbox" id="sendAlerts" name="sendAlerts" {{sendAlertsChecked}}>
+        Enviar alertas
+      </label>
     </div>
 
     <button type="submit">Salvar</button>

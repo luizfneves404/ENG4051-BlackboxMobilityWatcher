@@ -7,12 +7,15 @@
 #include <WiFiClientSecure.h>
 #include "certificates.h"
 #include <ArduinoJson.h>
+#include <Preferences.h>
 
 MQTTClient mqtt;
 
 IMUSpeed imu;
 
 WiFiClientSecure conexaoSegura;
+
+Preferences preferencias;
 
 // Timing variable for speed printing
 unsigned long previousSpeedTime = 0;
@@ -42,17 +45,28 @@ void reconectarMQTT()
       delay(1000);
     }
     Serial.println(" conectado!");
+    mqtt.subscribe("grupo1/preferencesToESP");
   }
+
 }
 
 void recebeuMensagem(String topico, String conteudo) { 
   Serial.println("Recebendo mensagem do MQTT: " + topico + ": " + conteudo); 
+  if (topico == "grupo1/preferencesToESP") {
+    JsonDocument doc;
+    deserializeJson(doc, conteudo);
+    preferencias.putBool("sendAlerts", doc["sendAlerts"]);
+    preferencias.putInt("speedMax", doc["speedMax"]);
+    preferencias.putInt("accMax", doc["accMax"]);
+  }
 }
 
 void setup()
 {
   Serial.begin(9600);
   delay(1500);
+
+  preferencias.begin("ajustesBMW");
 
   // // Initialize IMU
   // if (!imu.begin(8, 9, 100))

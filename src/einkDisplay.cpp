@@ -12,7 +12,7 @@ U8G2_FOR_ADAFRUIT_GFX fontes;
 GxEPD2_290_T94_V2 modeloTela(10, 14, 15, 16);
 GxEPD2_BW<GxEPD2_290_T94_V2, GxEPD2_290_T94_V2::HEIGHT> tela(modeloTela);
 
-Preferences preferencias;
+Preferences preferencias2;
 WebServer servidor(80);
 
 // MQTT callback function pointer
@@ -25,8 +25,9 @@ void setMQTTPublishCallback(MQTTPublishCallback callback) {
 void pagina_ajustes_GET()
 {
   // Lê valores do Preferences
-  int velocidadeMax = preferencias.getInt("speedMax", 60);
-  int aceleracaoMax = preferencias.getInt("accMax", 10);
+  int velocidadeMax = preferencias2.getInt("speedMax", 60);
+  int aceleracaoMax = preferencias2.getInt("accMax", 10);
+  bool sendAlerts = preferencias2.getBool("sendAlerts", true);
 
   // Abre o arquivo ajustes.html do LittleFS
   File file = LittleFS.open("/ajustes.html", "r");
@@ -43,6 +44,7 @@ void pagina_ajustes_GET()
   // Substitui os marcadores pelos valores reais
   pagina.replace("{{speedMax}}", String(velocidadeMax));
   pagina.replace("{{accMax}}", String(aceleracaoMax));
+  pagina.replace("{{sendAlertsChecked}}", sendAlerts ? "checked" : "");
 
   // Envia a resposta
   servidor.send(200, "text/html", pagina);
@@ -54,15 +56,18 @@ void pagina_ajustes_POST()
   {
     int velocidade = servidor.arg("speed").toInt();
     int aceleracao = servidor.arg("acceleration").toInt();
+    bool sendAlerts = servidor.hasArg("sendAlerts");
 
     // Atualiza Preferences
-    preferencias.putInt("speedMax", velocidade);
-    preferencias.putInt("accMax", aceleracao);
+    preferencias2.putInt("speedMax", velocidade);
+    preferencias2.putInt("accMax", aceleracao);
+    preferencias2.putBool("sendAlerts", sendAlerts);
 
     // Confirmação
     String resposta = "<html><body><h2>Preferências atualizadas!</h2>";
     resposta += "<p>Velocidade Máxima: " + String(velocidade) + " km/h</p>";
     resposta += "<p>Aceleração Máxima: " + String(aceleracao) + " m/s²</p>";
+    resposta += "<p>Enviar Alertas: " + String(sendAlerts ? "Sim" : "Não") + "</p>";
     resposta += "<a href='/ajustes'>Voltar</a></body></html>";
 
     servidor.send(200, "text/html", resposta);
@@ -78,13 +83,14 @@ void pagina_ajustes_POST()
 void enviaDadosPreferenciasMQTT() {
   if (mqttPublishCallback != nullptr) {
     JsonDocument doc;
-    doc["speedMax"] = preferencias.getInt("speedMax", 60);
-    doc["accMax"] = preferencias.getInt("accMax", 10);
+    doc["speedMax"] = preferencias2.getInt("speedMax", 60);
+    doc["accMax"] = preferencias2.getInt("accMax", 10);
+    doc["sendAlerts"] = preferencias2.getBool("sendAlerts", true);
     String payload;
     serializeJson(doc, payload);
     
     Serial.println("Enviando preferencias via MQTT: " + payload);
-    mqttPublishCallback("grupo1/preferences", payload.c_str());
+    mqttPublishCallback("grupo1/preferencesFromESP", payload.c_str());
   } else {
     Serial.println("MQTT callback não configurado - preferencias não enviadas!");
   }
@@ -168,7 +174,7 @@ void einkDisplaySetup()
   servidor.on("/ajustes", HTTP_POST, pagina_ajustes_POST);
   servidor.begin();
 
-  preferencias.begin("ajustesBMW");
+  preferencias2.begin("ajustesBMW");
 
   tela.init();
   tela.setRotation(2);
