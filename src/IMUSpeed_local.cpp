@@ -13,7 +13,7 @@ void IMUSpeed::calibrateSensorOffsets() {
 
     accSumX += ax;
     accSumY += ay;
-    accSumZ += (az - 16384);  // 1g em repouso = 16384 LSB
+    accSumZ += az;  // 1g em repouso = 16384 LSB
     gyroSumX += gx;
     gyroSumY += gy;
     gyroSumZ += gz;
