@@ -19,9 +19,19 @@ Preferences preferencias;
 
 // Timing variable for speed printing
 unsigned long previousSpeedTime = 0;
-const unsigned long SPEED_INTERVAL = 1000; // Print speed every 1 second
+const unsigned long SPEED_INTERVAL = 5000; // Print speed every 1 second
 
 Location previousLocation;
+
+float vX = 0;
+float vY = 0;
+float vZ = 0;
+float speed = 0;
+
+float aX = 0;
+float aY = 0;
+float aZ = 0;
+float acc = 0;
 
 // MQTT publishing wrapper function for dependency injection
 void publishToMQTT(const char* topic, const char* payload) {
@@ -67,6 +77,8 @@ void enviaDadosLocMQTT() {
   doc["latitude"] = currentLocation.latitude;
   doc["longitude"] = currentLocation.longitude;
   doc["accuracy"] = currentLocation.accuracy;
+  doc["velocidade"] = speed;
+  doc["aceleracao"] = acc;
   String payload;
   serializeJson(doc, payload);
   publishToMQTT("grupo1/posicao", payload.c_str());
@@ -77,9 +89,9 @@ void setup()
   Serial.begin(9600);
   delay(1500);
 
-  // preferencias.begin("ajustesBMW");
+  preferencias.begin("ajustesBMW");
 
-  // // Initialize IMU
+  // Initialize IMU
   if (!imu.begin(8, 9, 100))
   {
     Serial.println("Erro ao iniciar MPU6050");
@@ -88,23 +100,23 @@ void setup()
   }
   Serial.println("Sensor IMU iniciado");
 
-  // WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_AP_STA);
 
-  // // Setup MQTT callback before einkDisplay setup
-  // setMQTTPublishCallback(publishToMQTT);
+  // Setup MQTT callback before einkDisplay setup
+  setMQTTPublishCallback(publishToMQTT);
   
   // einkDisplaySetup();
 
-  // // Initialize WiFi Location services
-  // wifiLocationSetup(); // This is the setup function from WifiLocation.cpp
+  // Initialize WiFi Location services
+  wifiLocationSetup(); // This is the setup function from WifiLocation.cpp
 
-  // conexaoSegura.setCACert(get_certificado_mqtt());
+  conexaoSegura.setCACert(get_certificado_mqtt());
 
-  // mqtt.begin("mqtt.janks.dev.br", 8883, conexaoSegura);
-  // mqtt.onMessage(recebeuMensagem);
-  // mqtt.setKeepAlive(10);
-  // mqtt.setWill("tópico da desconexão", "conteúdo");
-  // reconectarMQTT();
+  mqtt.begin("mqtt.janks.dev.br", 8883, conexaoSegura);
+  mqtt.onMessage(recebeuMensagem);
+  mqtt.setKeepAlive(10);
+  mqtt.setWill("tópico da desconexão", "conteúdo");
+  reconectarMQTT();
 
   Serial.println("Sistema completo iniciado");
 
@@ -121,38 +133,45 @@ void loop()
   if (imu.update()) {
     if (currentTime - previousSpeedTime >= SPEED_INTERVAL) {
 
-    // float vX = imu.getVX();
-    // float vY = imu.getVY();
-    // float vZ = imu.getVZ();
-    // float speed = imu.getSpeed2D();
+    vX = imu.getVX();
+    vY = imu.getVY();
+    vZ = imu.getVZ();
+    speed = imu.getSpeed2D();
 
-    // float aX = imu.getAccX();
-    // float aY = imu.getAccY();
-    // float aZ = imu.getAccZ();
-    // float acc = imu.getAcc2D();
+    aX = imu.getAccX();
+    aY = imu.getAccY();
+    aZ = imu.getAccZ();
+    acc = imu.getAcc2D();
 
-    imu.printAll();
+    // imu.printAll();
     // imu.printTotals();
-    // imu.printTotals2D();
+    imu.printTotals2D();
+
+
+    if (speed > preferencias.getInt("speedMax", 5.0)) {
+      enviaDadosLocMQTT();
+    }
+
+
     previousSpeedTime = currentTime;
     }
   }
 
   // --- Non-Blocking WiFi Location Task ---
   // This single function handles the entire non-blocking process.
-  // wifiLocationLoop();
+  wifiLocationLoop();
 
-  // Location currentLocation = getCurrentLocation();
+  Location currentLocation = getCurrentLocation();
 
-  // if (previousLocation.latitude != currentLocation.latitude || previousLocation.longitude != currentLocation.longitude)
-  // {
-  //   enviaDadosLocMQTT();
-  //   mostraTela();
-  //   previousLocation = currentLocation;
-  // }
+  if (previousLocation.latitude != currentLocation.latitude || previousLocation.longitude != currentLocation.longitude)
+  {
+    enviaDadosLocMQTT();
+    // mostraTela();
+    previousLocation = currentLocation;
+  }
 
   // einkDisplayLoop();
 
-  // reconectarMQTT();
-  // mqtt.loop();
+  reconectarMQTT();
+  mqtt.loop();
 }
