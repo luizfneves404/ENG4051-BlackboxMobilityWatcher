@@ -1,4 +1,4 @@
-#include "IMUSpeed_local.h"
+#include "IMUSpeed.h"
 
 IMUSpeed::IMUSpeed() : vX(0), vY(0), vZ(0), lastTime(0), sampleIntervalMs(10) {}
 
