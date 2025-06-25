@@ -2,6 +2,10 @@
 
 IMUSpeed::IMUSpeed() : vX(0), vY(0), vZ(0), lastTime(0), sampleIntervalMs(10) {}
 
+#ifndef DEG_TO_RAD 
+#define DEG_TO_RAD 0.017453292519943295769236907684886
+#endif
+
 #define CALIB_OFFSET_NB_MES 1000
 void IMUSpeed::calibrateSensorOffsets() {
   float accSumX = 0, accSumY = 0, accSumZ = 0;
@@ -110,19 +114,35 @@ bool IMUSpeed::update() {
   float accZ = (az - gzg) * 9.81f;
 
   // Elimina ruído com limiar
-  if (abs(accX) < 0.2f) accX = 0;
-  if (abs(accY) < 0.2f) accY = 0;
-  if (abs(accZ) < 0.2f) accZ = 0;
+  if (abs(accX) < 0.5f) accX = 0;
+  if (abs(accY) < 0.5f) accY = 0;
+  if (abs(accZ) < 0.5f) accZ = 0;
 
-  vX += accX * dt;
-  vY += accY * dt;
-  vZ += accZ * dt;
+  if (!accX && !accY) {
+      resetSpeed(); // ou vX = vY = vZ = 0;
+  }
+
+  filteredAccX = alpha * accX + (1 - alpha) * filteredAccX;
+  filteredAccY = alpha * accY + (1 - alpha) * filteredAccY;
+  filteredAccZ = alpha * accZ + (1 - alpha) * filteredAccZ;
+
+  vX += filteredAccX * dt;
+  vY += filteredAccY * dt;
+  vZ += filteredAccZ * dt;
+
+  this->accX = filteredAccX;
+  this->accY = filteredAccY;
+  this->accZ = filteredAccZ;
 
   return true;
 }
 
 float IMUSpeed::getSpeed() {
   return sqrt(vX * vX + vY * vY + vZ * vZ);
+}
+
+float IMUSpeed::getSpeed2D() {
+  return sqrt(vX * vX + vY * vY);
 }
 
 void IMUSpeed::resetSpeed() {
@@ -135,4 +155,99 @@ void IMUSpeed::setSpeed(float vx, float vy, float vz) {
   vZ = vz;
 }
 
+// Velocidade
+float IMUSpeed::getVX() { return vX; }
+float IMUSpeed::getVY() { return vY; }
+float IMUSpeed::getVZ() { return vZ; }
 
+// Aceleração
+float IMUSpeed::getAccX() { return accX; }
+float IMUSpeed::getAccY() { return accY; }
+float IMUSpeed::getAccZ() { return accZ; }
+
+// Módulo da aceleração vetorial
+float IMUSpeed::getAcc() {
+  return sqrt(accX * accX + accY * accY + accZ * accZ);
+}
+
+float IMUSpeed::getAcc2D() {
+  return sqrt(accX * accX + accY * accY);
+}
+
+float ms_to_kmh(float speed_ms) {
+  return speed_ms * MS_TO_KMH;
+}
+
+void IMUSpeed::printAll() {
+  Serial.println("---------");
+
+  Serial.print("Velocidade X: ");
+  Serial.print(vX, 3);
+  Serial.print(" m/s | ");
+
+  Serial.print("Velocidade Y: ");
+  Serial.print(vY, 3);
+  Serial.print(" m/s | ");
+
+  Serial.print("Velocidade Z: ");
+  Serial.print(vZ, 3);
+  Serial.println(" m/s");
+
+  Serial.print("Velocidade total (3D): ");
+  Serial.print(getSpeed(), 3);
+  Serial.println(" m/s");
+
+  Serial.print("Velocidade total (2D): ");
+  Serial.print(getSpeed2D(), 3);
+  Serial.println(" m/s");
+
+  Serial.print("Aceleracao X: ");
+  Serial.print(accX, 3);
+  Serial.print(" m/s² | ");
+
+  Serial.print("Aceleracao Y: ");
+  Serial.print(accY, 3);
+  Serial.print(" m/s² | ");
+
+  Serial.print("Aceleracao Z: ");
+  Serial.print(accZ, 3);
+  Serial.println(" m/s²");
+
+  Serial.print("Modulo da aceleracao (3D): ");
+  Serial.print(getAcc(), 3);
+  Serial.println(" m/s²");
+
+  Serial.print("Modulo da aceleracao (2D): ");
+  Serial.print(getAcc2D(), 3);
+  Serial.println(" m/s²");
+
+  Serial.println("---------");
+}
+
+void IMUSpeed::printTotals() {
+  Serial.println("---------");
+
+  Serial.print("Velocidade total (3D): ");
+  Serial.print(getSpeed(), 3);
+  Serial.println(" m/s");
+
+  Serial.print("Modulo da aceleracao (3D): ");
+  Serial.print(getAcc(), 3);
+  Serial.println(" m/s²");
+
+  Serial.println("---------");
+}
+
+void IMUSpeed::printTotals2D() {
+  Serial.println("---------");
+
+  Serial.print("Velocidade total (2D): ");
+  Serial.print(getSpeed2D(), 3);
+  Serial.println(" m/s");
+
+  Serial.print("Modulo da aceleracao (2D): ");
+  Serial.print(getAcc2D(), 3);
+  Serial.println(" m/s²");
+
+  Serial.println("---------");
+}
